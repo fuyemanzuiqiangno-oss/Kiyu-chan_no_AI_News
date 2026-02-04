@@ -1,14 +1,11 @@
-import requests
-import openai
 import os
+import requests
+from openai import OpenAI
 
 # ===== 環境変数 =====
-LINE_TOKEN = os.environ["LINE_TOKEN"]
-USER_ID = os.environ["USER_ID"]
+LINE_TOKEN = os.environ["LINE_CHANNEL_ACCESS_TOKEN"]
+LINE_USER_ID = os.environ["LINE_USER_ID"]
 NEWS_API_KEY = os.environ["NEWS_API_KEY"]
-OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
-
-openai.api_key = OPENAI_API_KEY
 
 # ===== ニュース取得 =====
 url = "https://newsapi.org/v2/everything"
@@ -37,13 +34,14 @@ prompt = f"""
 {text}
 """
 
-response = openai.ChatCompletion.create(
-    model="gpt-4o-mini",
-    messages=[{"role":"user","content":prompt}],
-    temperature=0.3
+client = OpenAI()
+
+response = client.responses.create(
+    model="gpt-4.1-mini",
+    input=prompt
 )
 
-summary = response.choices[0].message.content
+summary = response.output_text
 
 # ===== LINE送信 =====
 line_url = "https://api.line.me/v2/bot/message/push"
@@ -51,8 +49,9 @@ headers = {
     "Authorization": f"Bearer {LINE_TOKEN}",
     "Content-Type": "application/json"
 }
+
 data = {
-    "to": USER_ID,
+    "to": LINE_USER_ID,
     "messages": [
         {"type": "text", "text": f"【本日のAIニュース】\n{summary}"}
     ]
